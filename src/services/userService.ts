@@ -202,10 +202,23 @@ export const userService = {
     return response.data
   },
 
+  // Current Active Learning Path
+  getCurrentLearningPath: async () => {
+    const response = await api.get('/user/learning-paths/current')
+    return response.data.data
+  },
+
+  setCurrentLearningPath: async (pathId: number) => {
+  const res = await api.post(
+    `/user/learning-paths/${pathId}/set-current`
+  )
+  return res.data
+  },
+
   getLearningPathByCareerId: async (careerId: number) => {
   if (!careerId) throw new Error("Career ID not found")
 
-  const response = await api.get(`/user/learning-paths/careerId/${careerId}`)
+  const response = await api.post(`/user/learning-paths/generate?careerId=${careerId}`)
   
   return response.data.data   // ✅ IMPORTANT FIX
   },
@@ -256,6 +269,17 @@ getProgressByPathId: async (pathId: number) => {
     return response.data
   },
 
+  generateResources: async (
+  skill: string,
+  level: string = 'BEGINNER',
+  language: string = 'both'
+) => {
+  const response = await api.post(
+    `/resources/search?skill=${encodeURIComponent(skill)}&level=${level}&language=${language}`
+  )
+
+  return response.data
+},
   getResourceDetails: async (resourceId: string): Promise<Resource> => {
     const response = await api.get(`/user/resources/${resourceId}`)
     return response.data

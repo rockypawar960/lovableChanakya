@@ -1,37 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { adminService } from '../../services/adminService'
-import { Users, Briefcase, CheckCircle, TrendingUp, AlertCircle, BookOpen } from 'lucide-react'
+import { Users, Briefcase, CheckCircle, TrendingUp } from 'lucide-react'
 import { Loading } from '../../components/ui/Loading'
 import { Alert } from '../../components/ui/Alert'
-
-interface StatCardProps {
-  icon: any
-  label: string
-  value: number
-  subtext?: string
-  color: string
-  iconColor: string
-}
-
-const StatCard: React.FC<StatCardProps> = ({
-  icon: Icon,
-  label,
-  value,
-  subtext,
-  color,
-  iconColor,
-}) => (
-  <div className={`${color} p-6 rounded-lg border border-slate-200`}>
-    <div className="flex items-center justify-between mb-4">
-      <h3 className="text-sm font-medium text-slate-700">{label}</h3>
-      <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center">
-        <Icon size={20} className={iconColor} />
-      </div>
-    </div>
-    <p className="text-3xl font-bold text-slate-900">{value}</p>
-    {subtext && <p className="text-xs text-slate-600 mt-2">{subtext}</p>}
-  </div>
-)
+import { StatCard } from '../../components/StatCard'
 
 const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<any>(null)
@@ -54,91 +26,86 @@ const AdminDashboard: React.FC = () => {
     }
   }
 
-  if (loading) {
-    return <Loading message="Loading dashboard..." />
-  }
+  if (loading) return <Loading message="Loading dashboard..." />
 
   return (
     <div className="max-w-7xl mx-auto p-4">
       <h1 className="text-3xl font-bold text-slate-900 mb-8">Admin Dashboard</h1>
 
-      {error && (
-        <Alert type="error" title="Error" message={error} className="mb-6" />
-      )}
+      {error && <Alert type="error" title="Error" message={error} className="mb-6" />}
 
       {stats && (
         <>
-          {/* Key Metrics */}
+          {/* 1. Key Metrics - StatCard Props fixed according to your component */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <StatCard
-              icon={Users}
-              label="Total Users"
+              icon={<Users size={20} className="text-blue-600" />}
+              title="Total Users"
               value={stats.totalUsers}
-              subtext={`${stats.activeUsers || 0} active`}
-              color="bg-blue-50"
-              iconColor="text-blue-600"
+              backgroundColor="bg-blue-50"
+              trend={{ value: stats.activeUsersWeekly || 0, isPositive: true }}
             />
             <StatCard
-              icon={TrendingUp}
-              label="New This Month"
-              value={stats.userGrowth?.length || 0}
-              color="bg-green-50"
-              iconColor="text-green-600"
+              icon={<TrendingUp size={20} className="text-green-600" />}
+              title="Completion Rate"
+              value={`${Math.round(stats.assessmentCompletionRate || 0)}%`}
+              backgroundColor="bg-green-50"
             />
             <StatCard
-              icon={Briefcase}
-              label="Careers"
-              value={stats.totalCareers}
-              color="bg-purple-50"
-              iconColor="text-purple-600"
+              icon={<Briefcase size={20} className="text-purple-600" />}
+              title="Total Careers"
+              value={Object.keys(stats.careerPopularityDistribution || {}).length}
+              backgroundColor="bg-purple-50"
             />
             <StatCard
-              icon={CheckCircle}
-              label="Assessments"
-              value={stats.completedAssessments}
-              color="bg-orange-50"
-              iconColor="text-orange-600"
+              icon={<CheckCircle size={20} className="text-orange-600" />}
+              title="Assessments"
+              value={stats.totalAssessments}
+              backgroundColor="bg-orange-50"
             />
           </div>
 
-          {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white rounded-lg border border-slate-200 p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-6">User Growth Trend</h3>
-              <div className="space-y-3">
-                {stats.userGrowth?.map((item: any, idx: number) => (
+            {/* 2. Assessment Activity Trend */}
+            <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-slate-900 mb-6">Assessment Activity</h3>
+              <div className="space-y-4">
+                {stats.assessmentCompletionTrend?.map((item: any, idx: number) => (
                   <div key={idx} className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600">{item.date}</span>
+                    <span className="text-sm text-slate-600 w-24">{item.date}</span>
                     <div className="flex-1 mx-4 bg-slate-100 rounded-full h-2">
                       <div
-                        className="bg-blue-600 h-2 rounded-full"
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-500"
                         style={{
-                          width: `${(item.count / Math.max(...stats.userGrowth.map((g: any) => g.count), 1)) * 100}%`,
+                          width: `${(item.count / (Math.max(...stats.assessmentCompletionTrend.map((g: any) => g.count)) || 1)) * 100}%`,
                         }}
                       ></div>
                     </div>
-                    <span className="text-sm font-medium text-slate-900">{item.count}</span>
+                    <span className="text-sm font-medium text-slate-900 w-8 text-right">{item.count}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-white rounded-lg border border-slate-200 p-6">
-              <h3 className="text-lg font-semibold text-slate-900 mb-6">Top Career Choices</h3>
-              <div className="space-y-3">
+            {/* 3. Popular Recommendations */}
+            <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-slate-900 mb-6">Popular Recommendations</h3>
+              <div className="space-y-4">
                 {stats.topCareers?.map((career: any, idx: number) => (
-                  <div key={idx} className="flex items-center justify-between pb-3 border-b border-slate-100 last:border-0">
-                    <span className="text-slate-700 font-medium">{career.title}</span>
-                    <div className="flex items-center gap-2">
-                      <div className="bg-slate-100 rounded-full h-2 w-24">
+                  <div key={idx} className="flex items-center justify-between pb-2 border-b border-slate-50 last:border-0">
+                    <span className="text-slate-700 font-medium">{career.careerName}</span>
+                    <div className="flex items-center gap-3">
+                      <div className="bg-slate-100 rounded-full h-2 w-24 hidden sm:block">
                         <div
                           className="bg-purple-600 h-2 rounded-full"
                           style={{
-                            width: `${(career.count / Math.max(...stats.topCareers.map((c: any) => c.count), 1)) * 100}%`,
+                            width: `${(career.recommendationCount / (Math.max(...stats.topCareers.map((c: any) => c.recommendationCount)) || 1)) * 100}%`,
                           }}
                         ></div>
                       </div>
-                      <span className="text-sm font-semibold text-slate-900 min-w-fit">{career.count}</span>
+                      <span className="text-sm font-semibold text-slate-900 bg-purple-50 px-2 py-1 rounded">
+                        {career.recommendationCount}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -146,25 +113,19 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Additional Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-lg border border-slate-200 p-6">
-              <h3 className="text-sm font-medium text-slate-700 mb-2">Avg User Score</h3>
-              <p className="text-3xl font-bold text-slate-900">
-                {stats.averageUserScore?.toFixed(1) || 0}%
-              </p>
-            </div>
-            <div className="bg-white rounded-lg border border-slate-200 p-6">
-              <h3 className="text-sm font-medium text-slate-700 mb-2">Learning Paths</h3>
-              <p className="text-3xl font-bold text-slate-900">{stats.enrolledLearningPaths || 0}</p>
-              <p className="text-xs text-slate-600 mt-1">Total enrollments</p>
-            </div>
-            <div className="bg-white rounded-lg border border-slate-200 p-6">
-              <h3 className="text-sm font-medium text-slate-700 mb-2">Platform Health</h3>
-              <div className="flex items-end gap-2">
-                <span className="text-2xl font-bold text-green-600">Healthy</span>
-                <span className="w-2 h-2 bg-green-600 rounded-full mb-2"></span>
-              </div>
+          {/* 4. Market Demand Grid */}
+          <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-slate-900 mb-6">Market Demand (Popularity Score)</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {Object.entries(stats.careerPopularityDistribution || {})
+                .sort(([, a]: any, [, b]: any) => b - a) // Sort by score
+                .slice(0, 10)
+                .map(([name, score]: any) => (
+                  <div key={name} className="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                    <p className="text-xs text-slate-500 truncate mb-1" title={name}>{name}</p>
+                    <p className="text-xl font-bold text-slate-800">{score}</p>
+                  </div>
+                ))}
             </div>
           </div>
         </>

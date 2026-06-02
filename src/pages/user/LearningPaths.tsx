@@ -12,17 +12,19 @@ const LearningPaths: React.FC = () => {
 
   const location = useLocation()
   const queryParams = new URLSearchParams(location.search)
-  const careerId = queryParams.get("careerId") || localStorage.getItem("careerId")
+  const careerId = queryParams.get("careerId")
 
-  useEffect(() => {
-    if (!careerId) {
-      setError("Career not found. Please complete assessment or select a career.")
-      setLoading(false)
-      return
-    }
+    useEffect(() => {
+  console.log("careerId =", careerId)
+
+  if (careerId) {
+    
     fetchPaths(Number(careerId))
-  }, [careerId])
-
+  } else {
+    
+    fetchCurrentPath()
+  }
+}, [careerId])
   const fetchPaths = async (id: number) => {
     try {
       const data = await userService.getLearningPathByCareerId(id)
@@ -35,6 +37,23 @@ const LearningPaths: React.FC = () => {
     }
   }
 
+  const fetchCurrentPath = async () => {
+  try {
+    const data = await userService.getCurrentLearningPath()
+
+    setPaths([data])
+
+    if (data?.id) {
+      fetchProgress(data.id)
+    }
+
+  } catch (err) {
+    setError("No active learning path found")
+  } finally {
+    setLoading(false)
+  }
+}
+
   const fetchProgress = async (pathId: number) => {
     try {
       const progress = await userService.getProgressByPathId(pathId)
@@ -46,16 +65,29 @@ const LearningPaths: React.FC = () => {
 
   // 🔥 Path shuru karne ke liye (First Step update)
   const handleStart = async (path: any) => {
-    const firstStep = path.steps?.[0];
-    if (!firstStep) return;
-    try {
-      await userService.updateStepStatus(firstStep.id, "in_progress");
-      setProgressMap(prev => ({ ...prev, [path.id]: 1 })); 
-      fetchProgress(path.id);
-    } catch (err) {
-      console.error("Error starting path:", err);
+  try {
+
+    // Make current path
+    await userService.setCurrentLearningPath(path.id)
+
+    // Start first step
+    const firstStep = path.steps?.[0]
+
+    if (firstStep) {
+      await userService.updateStepStatus(
+        firstStep.id,
+        "in_progress"
+      )
     }
-  };
+
+    fetchProgress(path.id)
+
+    alert("Learning Path Activated Successfully")
+
+  } catch (err) {
+    console.error(err)
+  }
+};
 
   // 🔥 Individual Step Complete karne ke liye
   const handleStepComplete = async (pathId: number, stepId: number) => {

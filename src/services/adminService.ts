@@ -12,26 +12,57 @@ export interface AdminUser {
 }
 
 export interface Career {
-  id: string
-  title: string
+  id: number           // JSON mein number hai
+  name: string         // title ki jagah name
   description: string
-  averageSalary: string
-  jobOutlook: string
-  requiredSkills: string[]
-  educationLevel: string
+  popularityScore: number
+  isActive: boolean
   createdAt: string
   updatedAt: string
 }
-
 export interface DashboardStats {
   totalUsers: number
-  activeUsers: number
-  totalCareers: number
-  completedAssessments: number
-  enrolledLearningPaths: number
-  averageUserScore: number
-  userGrowth: { date: string; count: number }[]
-  topCareers: { title: string; count: number }[]
+  totalAssessments: number
+  activeUsersDaily: number
+  activeUsersWeekly: number
+  assessmentCompletionRate: number
+  topCareers: { 
+    careerId: number; 
+    careerName: string; 
+    popularityScore: number; 
+    recommendationCount: number 
+  }[]
+  careerPopularityDistribution: Record<string, number>
+  userRegistrationTrend: { date: string; count: number }[]
+  assessmentCompletionTrend: { date: string; count: number }[]
+}
+
+export interface Assessment {
+      id: number
+      userId: number
+      userEmail: string
+      userFullName: string
+      totalScore: number
+      completedAt: string
+      isActive: boolean
+      bucketScores: {
+        SOCIAL: number
+        BUSINESS: number
+        CREATIVE: number
+        TECHNICAL: number
+        ANALYTICAL: number
+      }
+}
+
+export interface LearningPath {
+  id: number
+  careerId: number
+  pathName: string
+  description: string
+  durationMonths: number
+  stepsCount: number
+  createdAt: string | null
+  updatedAt: string | null
 }
 
 export interface AdminQueryResponse<T> {
@@ -45,25 +76,34 @@ export const adminService = {
   // Dashboard
   getDashboardStats: async (): Promise<DashboardStats> => {
     const response = await api.get('/admin/dashboard/stats')
-    return response.data
+    return response.data.data
   },
 
   // User Management
   getAllUsers: async (
-    page: number = 1,
-    limit: number = 20,
-    search?: string,
-    status?: string
-  ): Promise<AdminQueryResponse<AdminUser>> => {
-    const params = new URLSearchParams()
-    params.append('page', page.toString())
-    params.append('limit', limit.toString())
-    if (search) params.append('search', search)
-    if (status) params.append('status', status)
+  page: number = 0, // Spring Boot starts from 0
+  limit: number = 10,
+  search?: string,
+  status?: string
+): Promise<AdminQueryResponse<AdminUser>> => {
+  const params = new URLSearchParams()
+  params.append('page', page.toString())
+  params.append('size', limit.toString()) // 'limit' ko 'size' kar diya backend ke liye
+  if (search) params.append('search', search)
+  if (status) params.append('status', status)
 
-    const response = await api.get(`/admin/users?${params.toString()}`)
-    return response.data
-  },
+  const response = await api.get(`/admin/users?${params.toString()}`)
+  
+  // Backend ApiResponse wrapper se 'data' (PaginatedResponse) nikalna
+  const backendData = response.data.data
+    
+    return {
+        data: backendData.content || [],
+        total: backendData.totalElements || 0,
+        page: backendData.pageNumber,
+        limit: backendData.pageSize
+    }
+},
 
   getUserDetails: async (userId: string): Promise<AdminUser> => {
     const response = await api.get(`/admin/users/${userId}`)
@@ -89,19 +129,28 @@ export const adminService = {
 
   // Career Management
   getAllCareers: async (
-    page: number = 1,
-    limit: number = 20,
-    search?: string
-  ): Promise<AdminQueryResponse<Career>> => {
-    const params = new URLSearchParams()
-    params.append('page', page.toString())
-    params.append('limit', limit.toString())
-    if (search) params.append('search', search)
+  page: number = 1,
+  limit: number = 20,
+  search?: string
+): Promise<AdminQueryResponse<Career>> => {
+  const params = new URLSearchParams()
+  // Spring Boot 0-indexed hota hai, isliye (page - 1)
+  params.append('page', (page - 1).toString())
+  params.append('limit', limit.toString())
+  if (search) params.append('search', search)
 
-    const response = await api.get(`/admin/careers?${params.toString()}`)
-    return response.data
-  },
+  const response = await api.get(`/admin/careers?${params.toString()}`)
+  
+  // Aapka data 'response.data.data' ke andar hai
+  const result = response.data.data 
 
+  return {
+      data: result.content || [],
+      total: result.totalElements || 0,
+      page: result.pageNumber + 1, // Frontend ke liye vapas 1-based kar rahe hain
+      limit: result.pageSize
+  }
+},
   getCareerDetails: async (careerId: string): Promise<Career> => {
     const response = await api.get(`/admin/careers/${careerId}`)
     return response.data
@@ -130,8 +179,14 @@ export const adminService = {
     params.append('page', page.toString())
     params.append('limit', limit.toString())
 
-    const response = await api.get(`/admin/assessments?${params.toString()}`)
-    return response.data
+    const response = await api.get(`/admin/assessments?...`)
+
+      return {
+    data: response.data.data.content,
+    total: response.data.data.totalElements,
+    page: response.data.data.pageNumber + 1, // backend 0-based hai
+    limit: response.data.data.pageSize
+  }
   },
 
   getAssessmentDetails: async (assessmentId: string): Promise<any> => {
@@ -176,7 +231,14 @@ export const adminService = {
     params.append('limit', limit.toString())
 
     const response = await api.get(`/admin/learning-paths?${params.toString()}`)
-    return response.data
+    
+
+      return {
+    data: response.data.data.content,
+    total: response.data.data.totalElements,
+    page: response.data.data.pageNumber + 1, // backend 0-based hai
+    limit: response.data.data.pageSize
+  }
   },
 
   getLearningPathDetails: async (pathId: string): Promise<any> => {

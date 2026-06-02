@@ -12,6 +12,7 @@ interface UsePaginationReturn extends PaginationState {
   nextPage: () => void
   prevPage: () => void
   setLimit: (limit: number) => void
+  setTotal: (total: number) => void // ✅ added
   reset: () => void
 }
 
@@ -46,10 +47,6 @@ export const usePagination = (initialLimit = 20): UsePaginationReturn => {
     setTotal(0)
   }, [])
 
-  const setTotalPages = useCallback((newTotal: number) => {
-    setTotal(newTotal)
-  }, [])
-
   return {
     page,
     limit,
@@ -59,21 +56,7 @@ export const usePagination = (initialLimit = 20): UsePaginationReturn => {
     nextPage,
     prevPage,
     setLimit,
+    setTotal, // ✅ IMPORTANT
     reset,
-  }
-}
-
-// Helper to set total from API response
-export const usePaginationWithTotal = (initialLimit = 20) => {
-  const pagination = usePagination(initialLimit)
-
-  const setTotalFromResponse = (total: number) => {
-    // Access internal state through the returned object
-    return { ...pagination, total }
-  }
-
-  return {
-    ...pagination,
-    setTotalFromResponse,
   }
 }

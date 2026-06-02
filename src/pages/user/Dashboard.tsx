@@ -62,27 +62,22 @@ const Dashboard: React.FC = () => {
       iconColor: 'text-yellow-600',
     },
     {
-      icon: BookOpen,
-      title: 'Learning Paths',
-      description: 'Enroll in structured courses',
-      action: () => {
-        const id = dashboard?.careerId || localStorage.getItem("careerId")
-        if (id) {
-          navigate(`/user/learning-paths?careerId=${id}`)
-        } else {
-          alert("Career not found. Please complete assessment.")
-        }
-      },
-      color: 'bg-green-50',
-      iconColor: 'text-green-600',
+    icon: BookOpen,
+    title: 'Learning Paths',
+    description: 'View your current active learning path',
+    action: () => {
+      navigate('/user/learning-paths')
+    },
+    color: 'bg-green-50',
+    iconColor: 'text-green-600',
     },
     {
-      icon: TrendingUp,
-      title: 'Track Progress',
-      description: 'Monitor your learning journey',
-      action: () => navigate('/user/progress'),
-      color: 'bg-purple-50',
-      iconColor: 'text-purple-600',
+    icon: BookOpen,
+    title: 'Resources',
+    description: 'Browse learning materials & guides',
+    action: () => navigate('/user/resources'),
+    color: 'bg-purple-50',
+    iconColor: 'text-purple-600',
     },
   ]
 

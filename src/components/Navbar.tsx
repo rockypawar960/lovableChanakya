@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { Menu, X, Home } from 'lucide-react'  // Home add karo import mein
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth()
@@ -42,6 +42,10 @@ export const Navbar: React.FC = () => {
 
             {isUser && (
               <>
+                <Link to="/" className="flex items-center gap-1 text-gray-700 hover:text-blue-600 transition-colors">
+                  <Home size={16} />
+                  Home
+                </Link>
                 <Link to="/user/dashboard" className="text-gray-700 hover:text-blue-600 transition-colors">
                   Dashboard
                 </Link>
@@ -106,6 +110,10 @@ export const Navbar: React.FC = () => {
 
             {isUser && (
               <>
+                <Link to="/" className="flex items-center gap-1 py-2 text-gray-700 hover:text-blue-600 transition-colors" onClick={closeMobile}>
+                  <Home size={16} />
+                  Home
+                </Link>
                 <Link to="/user/dashboard" className="block py-2 text-gray-700 hover:text-blue-600" onClick={closeMobile}>
                   Dashboard
                 </Link>

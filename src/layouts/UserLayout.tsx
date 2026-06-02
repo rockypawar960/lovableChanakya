@@ -24,7 +24,7 @@ const navItems = [
   { label: 'Recommendations', icon: Lightbulb,       href: '/user/recommendations' },
   { label: 'Learning Paths',  icon: BookOpen,        href: '/user/learning-paths' },
   { label: 'Resources',       icon: Library,         href: '/user/resources' },
-  { label: 'Progress',        icon: TrendingUp,      href: '/user/progress' },
+  // { label: 'Progress',        icon: TrendingUp,      href: '/user/progress' },
 ]
 
 const UserLayout: React.FC<UserLayoutProps> = ({ children }) => {

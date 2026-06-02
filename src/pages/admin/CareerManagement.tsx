@@ -26,61 +26,76 @@ const CareerManagement: React.FC = () => {
   const [deleting, setDeleting] = useState<string | null>(null)
   const pagination = usePagination(20)
 
+  // ✅ Ye wala (API call)
   useEffect(() => {
     fetchCareers()
   }, [pagination.page, searchQuery])
 
+  // ✅ Ye wala (page reset on search)
+  useEffect(() => {
+    pagination.goToPage(1)
+  }, [searchQuery])
   const fetchCareers = async () => {
-    try {
-      const response = await adminService.getAllCareers(
-        pagination.page,
-        pagination.limit,
-        searchQuery || undefined
-      )
-      setCareers(response.data)
-      ;(pagination as any).total = response.total
-    } catch (err) {
-      setError('Failed to load careers')
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
+  try {
+    setLoading(true)
+
+    const response = await adminService.getAllCareers(
+      pagination.page,
+      pagination.limit,
+      searchQuery || undefined
+    )
+
+    console.log(response.data[0]) // 👈 ye add karo
+
+    setCareers(response.data)
+    pagination.setTotal(response.total)
+
+  } catch (err) {
+    setError('Failed to load careers')
+    console.error(err)
+  } finally {
+    setLoading(false)
   }
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      const payload = {
-        ...formData,
-        requiredSkills: formData.requiredSkills.split(',').map((s) => s.trim()),
-      }
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  try {
+    // Backend ke JSON format ke hisaab se payload taiyar kiya
+    const payload = {
+      name: formData.title, // 'title' ko 'name' mein map kiya backend ke liye
+      description: formData.description,
+      popularityScore: 0, // Default value
+      isActive: true,     // Naya career by default active
+    };
 
-      if (editingId) {
-        await adminService.updateCareer(editingId, payload)
-        setCareers((prev) =>
-          prev.map((c) => (c.id === editingId ? { ...c, ...payload } : c))
-        )
-      } else {
-        const newCareer = await adminService.createCareer(payload)
-        setCareers((prev) => [newCareer, ...prev])
-      }
-
-      setShowForm(false)
-      setEditingId(null)
-      setFormData({
-        title: '',
-        description: '',
-        averageSalary: '',
-        jobOutlook: '',
-        requiredSkills: '',
-        educationLevel: '',
-      })
-    } catch (err) {
-      setError('Failed to save career')
-      console.error(err)
+    if (editingId) {
+      await adminService.updateCareer(editingId, payload);
+      setCareers((prev) =>
+        prev.map((c) => (c.id === editingId ? { ...c, ...payload } : c))
+      );
+    } else {
+      // API call
+      const newCareer = await adminService.createCareer(payload);
+      setCareers((prev) => [newCareer, ...prev]);
     }
-  }
 
+    // Form reset logic
+    setShowForm(false);
+    setEditingId(null);
+    setFormData({
+      title: '',
+      description: '',
+      averageSalary: '',
+      jobOutlook: '',
+      requiredSkills: '',
+      educationLevel: '',
+    });
+  } catch (err) {
+    setError('Failed to save career');
+    console.error(err);
+  }
+};
   const handleEdit = (career: any) => {
     setFormData({
       ...career,
@@ -148,88 +163,74 @@ const CareerManagement: React.FC = () => {
       )}
 
       {/* Form */}
-      {showForm && (
-        <div className="bg-white rounded-lg border border-slate-200 p-6 mb-8">
-          <h2 className="text-xl font-bold text-slate-900 mb-6">
-            {editingId ? 'Edit Career' : 'Add New Career'}
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                type="text"
-                placeholder="Career Title"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-                required
-              />
-              <input
-                type="text"
-                placeholder="Average Salary"
-                value={formData.averageSalary}
-                onChange={(e) =>
-                  setFormData({ ...formData, averageSalary: e.target.value })
-                }
-                className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-              />
-              <input
-                type="text"
-                placeholder="Job Outlook"
-                value={formData.jobOutlook}
-                onChange={(e) =>
-                  setFormData({ ...formData, jobOutlook: e.target.value })
-                }
-                className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-              />
-              <input
-                type="text"
-                placeholder="Education Level"
-                value={formData.educationLevel}
-                onChange={(e) =>
-                  setFormData({ ...formData, educationLevel: e.target.value })
-                }
-                className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-              />
-            </div>
-            <textarea
-              placeholder="Description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-              rows={3}
-              required
-            ></textarea>
-            <input
-              type="text"
-              placeholder="Required Skills (comma-separated)"
-              value={formData.requiredSkills}
-              onChange={(e) =>
-                setFormData({ ...formData, requiredSkills: e.target.value })
-              }
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
-            />
-            <div className="flex gap-4">
-              <button
-                type="submit"
-                className="flex-1 bg-slate-900 text-white py-2 rounded-lg font-medium hover:bg-slate-800"
-              >
-                Save Career
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowForm(false)
-                  setEditingId(null)
-                }}
-                className="flex-1 border border-slate-300 text-slate-700 py-2 rounded-lg font-medium hover:bg-slate-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
+     {showForm && (
+  <div className="bg-white rounded-lg border border-slate-200 p-6 mb-8 shadow-sm">
+    <h2 className="text-xl font-bold text-slate-900 mb-6">
+      {editingId ? 'Edit Career' : 'Add New Career'}
+    </h2>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 gap-4">
+        {/* Career Name (Mapped to 'title' in formData) */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-slate-700">Career Name</label>
+          <input
+            type="text"
+            placeholder="e.g. Software Engineer"
+            value={formData.title}
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            className="px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+            required
+          />
         </div>
-      )}
 
+        {/* Description */}
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-slate-700">Description</label>
+          <textarea
+            placeholder="Describe the career responsibilities..."
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-500"
+            rows={4}
+            required
+          ></textarea>
+        </div>
+      </div>
+
+      {/* Note for UI: Extra fields hidden as they aren't in your current backend JSON */}
+      <p className="text-xs text-slate-500 italic">
+        * Popularity score and Status are managed automatically.
+      </p>
+
+      <div className="flex gap-4 pt-2">
+        <button
+          type="submit"
+          className="flex-1 bg-slate-900 text-white py-2 rounded-lg font-medium hover:bg-slate-800 transition-colors"
+        >
+          {editingId ? 'Update Career' : 'Save Career'}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setShowForm(false)
+            setEditingId(null)
+            setFormData({
+              title: '',
+              description: '',
+              averageSalary: '',
+              jobOutlook: '',
+              requiredSkills: '',
+              educationLevel: '',
+            })
+          }}
+          className="flex-1 border border-slate-300 text-slate-700 py-2 rounded-lg font-medium hover:bg-slate-50 transition-colors"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+)}
       {/* Search */}
       <div className="mb-8">
         <div className="relative">
@@ -250,7 +251,7 @@ const CareerManagement: React.FC = () => {
           <div key={career.id} className="bg-white rounded-lg border border-slate-200 p-6 hover:shadow-lg transition-shadow">
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="text-lg font-bold text-slate-900">{career.title}</h3>
+                <h3 className="text-lg font-bold text-slate-900">{career.name}</h3>
                 <p className="text-slate-600 mt-1">{career.description}</p>
               </div>
               <div className="flex gap-2">
@@ -270,7 +271,7 @@ const CareerManagement: React.FC = () => {
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
+              {/* <div>
                 <p className="text-xs text-slate-600">Salary</p>
                 <p className="font-semibold text-slate-900">{career.averageSalary}</p>
               </div>
@@ -287,7 +288,7 @@ const CareerManagement: React.FC = () => {
                 <p className="font-semibold text-slate-900">
                   {career.requiredSkills?.length || 0}
                 </p>
-              </div>
+              </div> */}
             </div>
           </div>
         ))}
