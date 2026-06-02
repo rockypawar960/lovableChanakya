@@ -17,15 +17,18 @@ export const authService = {
   // ✅ Real API Call to your Spring Boot Backend
   login: async (data: LoginRequest) => {
     console.log("🚀 Attempting Real API Login for:", data.email)
-    return api.post('/auth/login', data)
+    const response = await api.post('/auth/login', data)
+    return response.data  // ← YAHAN CHANGE
   },
 
   signup: async (data: SignupRequest) => {
-    return api.post('/auth/signup', data)
+    const response = await api.post('/auth/signup', data)
+    return response.data  // ← YAHAN CHANGE
   },
 
   adminLogin: async (data: LoginRequest) => {
-    return api.post('/auth/login', data)
+    const response = await api.post('/auth/login', data)
+    return response.data  // ← YAHAN CHANGE
   },
 
   logout: async () => {
