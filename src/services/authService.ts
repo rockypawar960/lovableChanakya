@@ -21,8 +21,15 @@ export const authService = {
   },
 
   signup: async (data: SignupRequest) => {
-    const response = await api.post('/auth/register', data)
-    return response.data  // ← YAHAN CHANGE
+  const payload = {
+    firstName: data.firstName,
+    lastName: data.lastName,
+    email: data.email,
+    password: data.password
+  }
+
+  const response = await api.post('/auth/register', payload)
+  return response.data
   },
 
   adminLogin: async (data: LoginRequest) => {
