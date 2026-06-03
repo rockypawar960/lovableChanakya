@@ -22,7 +22,7 @@ export const authService = {
   },
 
   signup: async (data: SignupRequest) => {
-    const response = await api.post('/auth/signup', data)
+    const response = await api.post('/auth/register', data)
     return response.data  // ← YAHAN CHANGE
   },
 
