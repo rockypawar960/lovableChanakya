@@ -1,5 +1,27 @@
 import api from './api'
 
+export type UserProfile = {
+  email?: string
+  firstName?: string | null
+  lastName?: string | null
+  classOrYear?: string | null
+  stream?: string | null
+  interests?: string | null
+  strengths?: string | null
+  challenges?: string | null
+  bio?: string | null
+  dateOfBirth?: string | null
+  gender?: string | null
+  phoneNumber?: string | null
+  city?: string | null
+  state?: string | null
+  country?: string | null
+  schoolOrCollegeName?: string | null
+  board?: string | null
+  targetExam?: string | null
+  careerGoal?: string | null
+  languagesKnown?: string | null
+}
 export interface AssessmentQuestion {
   id: string
   text: string
@@ -70,19 +92,6 @@ export interface Resource {
   isBookmarked?: boolean
 }
 
-export interface UserProfile {
-  id: string
-  email: string
-  firstName: string
-  lastName: string
-  bio: string
-  skills: string[]
-  interests: string[]
-  educationLevel: string
-  yearsOfExperience: number
-  careerGoal: string
-  profilePictureUrl: string
-}
 
 export interface ProgressData {
   totalAssessments: number
@@ -100,7 +109,7 @@ export const userService = {
   // Profile
   getProfile: async (): Promise<UserProfile> => {
     const response = await api.get('/user/profile')
-    return response.data
+    return response.data?.data ?? response.data
   },
 
   getDashboard: async () => {
@@ -110,7 +119,7 @@ export const userService = {
 
   updateProfile: async (data: Partial<UserProfile>): Promise<UserProfile> => {
     const response = await api.put('/user/profile', data)
-    return response.data
+    return response.data?.data ?? response.data
   },
 
   uploadProfilePicture: async (file: File): Promise<{ url: string }> => {

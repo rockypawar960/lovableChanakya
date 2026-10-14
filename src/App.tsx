@@ -10,6 +10,8 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import AdminLogin from './pages/AdminLogin'
 import Landing from './pages/Landing'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
 
 // User Pages
 import UserDashboard from './pages/user/Dashboard'
@@ -18,6 +20,7 @@ import Recommendations from './pages/user/Recommendations'
 import LearningPaths from './pages/user/LearningPaths'
 import Resources from './pages/user/Resources'
 import Progress from './pages/user/Progress'
+import Profile from './pages/user/Profile'
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard'
@@ -40,6 +43,8 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
 
           {/* User Routes */}
           <Route
@@ -48,6 +53,16 @@ function App() {
               <ProtectedRoute requiredRole="USER">
                 <UserLayout>
                   <UserDashboard />
+                </UserLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/user/profile"
+            element={
+              <ProtectedRoute requiredRole="USER">
+                <UserLayout>
+                  <Profile />
                 </UserLayout>
               </ProtectedRoute>
             }
@@ -92,15 +107,15 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route 
-            path="/user/learning-paths/:pathId/full" 
+          <Route
+            path="/user/learning-paths/:pathId/full"
             element={
               <ProtectedRoute requiredRole="USER">
                 <UserLayout>
                   <LearningPaths /> {/* Aapka component name jo full path dikhayega */}
                 </UserLayout>
               </ProtectedRoute>
-            } 
+            }
           />
           <Route
             path="/user/resources"

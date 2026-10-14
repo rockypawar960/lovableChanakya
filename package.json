@@ -11,8 +11,6 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
     "axios": "^1.16.1",
     "lucide-react": "^1.17.0",
     "react": "^18.2.0",

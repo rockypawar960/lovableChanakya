@@ -16,6 +16,7 @@ interface AuthContextType {
   isLoading: boolean
   login: (token: string, user: User) => void
   logout: () => void
+  updateUser: (user: User) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -46,14 +47,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [])
 
-  // ✅ FIXED LOGIN (extra safety + logs)
   const login = (newToken: string, newUser: User) => {
     if (!newToken || !newUser) {
       console.error("Invalid login data")
       return
     }
-
-    console.log("Saving auth:", newUser)
 
     setToken(newToken)
     setUser(newUser)
@@ -73,6 +71,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.location.href = '/login'
   }
 
+  // ✅ Profile edit ke baad context + localStorage sync
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser)
+    localStorage.setItem('authUser', JSON.stringify(updatedUser))
+  }
+
   const value: AuthContextType = {
     user,
     token,
@@ -80,6 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading,
     login,
     logout,
+    updateUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { Menu, X, Home } from 'lucide-react'  // Home add karo import mein
+import { ProfileDropdown } from './ProfileDropdown'
+import { Menu, X, Home } from 'lucide-react'
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth()
@@ -55,11 +56,8 @@ export const Navbar: React.FC = () => {
                 <Link to="/user/recommendations" className="text-gray-700 hover:text-blue-600 transition-colors">
                   Recommendations
                 </Link>
-                <div className="flex items-center gap-4 border-l border-gray-200 pl-4">
-                  <span className="text-sm text-gray-600">{user.email}</span>
-                  <button onClick={logout} className="text-gray-700 hover:text-red-600 transition-colors">
-                    Logout
-                  </button>
+                <div className="border-l border-gray-200 pl-4">
+                  <ProfileDropdown />
                 </div>
               </>
             )}
@@ -75,11 +73,8 @@ export const Navbar: React.FC = () => {
                 <Link to="/admin/careers" className="text-gray-700 hover:text-blue-600 transition-colors">
                   Careers
                 </Link>
-                <div className="flex items-center gap-4 border-l border-gray-200 pl-4">
-                  <span className="text-sm text-gray-600">{user.email}</span>
-                  <button onClick={logout} className="text-gray-700 hover:text-red-600 transition-colors">
-                    Logout
-                  </button>
+                <div className="border-l border-gray-200 pl-4">
+                  <ProfileDropdown />
                 </div>
               </>
             )}
@@ -122,6 +117,9 @@ export const Navbar: React.FC = () => {
                 </Link>
                 <Link to="/user/recommendations" className="block py-2 text-gray-700 hover:text-blue-600" onClick={closeMobile}>
                   Recommendations
+                </Link>
+                <Link to="/user/profile" className="block py-2 text-gray-700 hover:text-blue-600" onClick={closeMobile}>
+                  Profile
                 </Link>
                 <button
                   onClick={() => { logout(); closeMobile() }}
