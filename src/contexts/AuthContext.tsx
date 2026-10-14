@@ -7,6 +7,7 @@ export interface User {
   lastName: string
   role: 'USER' | 'ADMIN'
   createdAt: string
+  profilePictureUrl?: string | null
 }
 
 interface AuthContextType {
