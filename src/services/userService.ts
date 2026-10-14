@@ -21,6 +21,7 @@ export type UserProfile = {
   targetExam?: string | null
   careerGoal?: string | null
   languagesKnown?: string | null
+  profilePictureUrl?: string | null   // ⬅️ NEW
 }
 export interface AssessmentQuestion {
   id: string
@@ -106,6 +107,8 @@ export interface ProgressData {
 }
 
 export const userService = {
+
+  
   // Profile
   getProfile: async (): Promise<UserProfile> => {
     const response = await api.get('/user/profile')
@@ -122,13 +125,14 @@ export const userService = {
     return response.data?.data ?? response.data
   },
 
-  uploadProfilePicture: async (file: File): Promise<{ url: string }> => {
+  uploadProfilePicture: async (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append('file', file)
     const response = await api.post('/user/profile/picture', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
-    return response.data
+    // backend ApiResponse shape: { success, message, data: "<cloudinary url>" }
+    return response.data?.data ?? response.data
   },
 
   // Assessments

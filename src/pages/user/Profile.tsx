@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react'
-import { Pencil, Save, X, AlertCircle, CheckCircle } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
+import { Pencil, Save, X, AlertCircle, CheckCircle, Camera, User as UserIcon } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { userService } from '../../services/userService'
 import type { UserProfile } from '../../services/userService'
@@ -59,6 +59,8 @@ const sections: { title: string; fields: Field[] }[] = [
 const inputClass =
   'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+
 const Profile: React.FC = () => {
   const { user, updateUser } = useAuth()
   const [profile, setProfile] = useState<ProfileData>({})
@@ -68,6 +70,12 @@ const Profile: React.FC = () => {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  // --- Profile picture state ---
+  const [pictureFile, setPictureFile] = useState<File | null>(null)
+  const [picturePreview, setPicturePreview] = useState<string | null>(null)
+  const [pictureError, setPictureError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -84,6 +92,13 @@ const Profile: React.FC = () => {
     load()
   }, [])
 
+  // Revoke the temporary object URL when it's replaced or component unmounts
+  useEffect(() => {
+    return () => {
+      if (picturePreview) URL.revokeObjectURL(picturePreview)
+    }
+  }, [picturePreview])
+
   const startEdit = () => {
     setForm({ ...profile })
     setError('')
@@ -91,32 +106,86 @@ const Profile: React.FC = () => {
     setEditing(true)
   }
 
+  const cancelEdit = () => {
+    setEditing(false)
+    setPictureFile(null)
+    setPictureError('')
+    if (picturePreview) {
+      URL.revokeObjectURL(picturePreview)
+      setPicturePreview(null)
+    }
+  }
+
+  const handlePictureSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setPictureError('')
+
+    if (!file.type.startsWith('image/')) {
+      setPictureError('Please select an image file')
+      return
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      setPictureError('Image must be under 5MB')
+      return
+    }
+
+    if (picturePreview) URL.revokeObjectURL(picturePreview)
+    setPictureFile(file)
+    setPicturePreview(URL.createObjectURL(file))
+  }
+
   const handleSave = async () => {
     setSaving(true)
     setError('')
     try {
-      // sirf editable fields bhej (email, profilePictureUrl nahi)
-    const editableKeys = sections.flatMap((s) => s.fields.map((f) => f.key))
-    const payload = Object.fromEntries(
-    editableKeys.map((k) => {
-        const v = form[k]
-    // date khaali ho to null, baaki text fields khaali string (clear ho jayenge)
-        return [k, k === 'dateOfBirth' && v === '' ? null : (v ?? null)]
-    })
-    ) as Partial<UserProfile>
-    
-      const updated = await userService.updateProfile(payload)
-      setProfile((updated || {}) as ProfileData)
+      let updatedPictureUrl: string | null = null
 
-      // Navbar me naam sync rakhne ke liye
+      // 1. Upload picture first, if a new one was picked
+      if (pictureFile) {
+        try {
+          updatedPictureUrl = await userService.uploadProfilePicture(pictureFile)
+        } catch (err) {
+          console.error('Failed to upload picture:', err)
+          setError('Failed to upload profile picture')
+          setSaving(false)
+          return
+        }
+      }
+
+      // 2. Save the text fields (sirf editable fields bhej)
+      const editableKeys = sections.flatMap((s) => s.fields.map((f) => f.key))
+      const payload = Object.fromEntries(
+        editableKeys.map((k) => {
+          const v = form[k]
+          return [k, k === 'dateOfBirth' && v === '' ? null : (v ?? null)]
+        })
+      ) as Partial<UserProfile>
+
+      const updated = await userService.updateProfile(payload)
+      const mergedProfile: ProfileData = {
+        ...((updated || {}) as ProfileData),
+        ...(updatedPictureUrl ? { profilePictureUrl: updatedPictureUrl } : {}),
+      }
+      setProfile(mergedProfile)
+
+      // Navbar me naam + image sync rakhne ke liye
       if (user) {
         updateUser({
           ...user,
           firstName: updated?.firstName ?? user.firstName,
           lastName: updated?.lastName ?? user.lastName,
+          profilePictureUrl:
+            updatedPictureUrl ?? (mergedProfile.profilePictureUrl as string | null | undefined) ?? user.profilePictureUrl,
         })
       }
 
+      setPictureFile(null)
+      if (picturePreview) {
+        URL.revokeObjectURL(picturePreview)
+        setPicturePreview(null)
+      }
       setEditing(false)
       setSuccess('Profile updated successfully')
     } catch (err) {
@@ -174,22 +243,62 @@ const Profile: React.FC = () => {
 
   const memberSince = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString('en-IN', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    })
     : ''
+
+  const avatarSrc = picturePreview || profile.profilePictureUrl || ''
 
   return (
     <div className="max-w-4xl mx-auto p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">My Profile</h1>
-          <p className="text-slate-600 mt-1">
-            {user?.email}
-            {memberSince && <span className="text-slate-400"> · Member since {memberSince}</span>}
-          </p>
+        <div className="flex items-center gap-4">
+          {/* Avatar */}
+          <div className="relative">
+            <div className="w-16 h-16 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center border border-slate-300">
+              {avatarSrc ? (
+                <img src={avatarSrc} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <UserIcon size={28} className="text-slate-400" />
+              )}
+            </div>
+            {editing && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute -bottom-1 -right-1 bg-blue-600 text-white rounded-full p-1.5 hover:bg-blue-700 transition-colors"
+                title="Change photo"
+              >
+                <Camera size={14} />
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePictureSelect}
+              className="hidden"
+            />
+          </div>
+
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">My Profile</h1>
+            <p className="text-slate-600 mt-1">
+              {user?.email}
+              {memberSince && <span className="text-slate-400"> · Member since {memberSince}</span>}
+            </p>
+            {editing && pictureError && (
+              <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
+                <AlertCircle size={12} /> {pictureError}
+              </p>
+            )}
+            {editing && pictureFile && !pictureError && (
+              <p className="text-blue-600 text-xs mt-1">New photo selected — saved on Save</p>
+            )}
+          </div>
         </div>
 
         {!editing ? (
@@ -202,7 +311,7 @@ const Profile: React.FC = () => {
         ) : (
           <div className="flex gap-2">
             <button
-              onClick={() => setEditing(false)}
+              onClick={cancelEdit}
               disabled={saving}
               className="flex items-center gap-2 border border-slate-300 px-4 py-2 rounded-lg hover:bg-slate-50"
             >
